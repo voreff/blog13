@@ -359,7 +359,7 @@ export default function ChatPage() {
                       {messages.length > 0 && (
                         <div className="text-center">
                           <Button variant="outline" size="sm" onClick={() => loadMessages(true)}>
-                            Yana 30 ta yuklash
+                            Yana
                           </Button>
                         </div>
                       )}
