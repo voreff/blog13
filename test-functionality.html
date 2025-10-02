@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Functionality Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 3px; }
+        .captcha-container { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+        .captcha-container img { border: 1px solid #ddd; border-radius: 3px; }
+        .captcha-container button { width: auto; }
+    </style>
+</head>
+<body>
+    <h1>Blog Functionality Test</h1>
+    
+    <!-- API Connection Test -->
+    <div class="test-section">
+        <h2>1. API Connection Test</h2>
+        <button onclick="testAPIConnection()">Test API Connection</button>
+        <button onclick="testCookieSession()">Test Cookie/Session</button>
+        <div id="api-result"></div>
+    </div>
+
+    <!-- Captcha Test -->
+    <div class="test-section">
+        <h2>2. Captcha System Test</h2>
+        <div class="captcha-container">
+            <img id="captcha-image" src="/api/captcha.php" alt="Captcha" crossorigin="use-credentials">
+            <button onclick="refreshCaptcha()">Refresh Captcha</button>
+        </div>
+        <input type="text" id="captcha-input" placeholder="Enter captcha code">
+        <button onclick="testCaptcha()">Test Captcha</button>
+        <div id="captcha-result"></div>
+    </div>
+
+    <!-- Contact Form Test -->
+    <div class="test-section">
+        <h2>3. Contact Form Test</h2>
+        <input type="text" id="contact-name" placeholder="Your Name" value="Test User">
+        <input type="email" id="contact-email" placeholder="Your Email" value="test@gmail.com">
+        <textarea id="contact-message" placeholder="Your Message" rows="3">This is a test message from the functionality test.</textarea>
+        <div class="captcha-container">
+            <img id="contact-captcha-image" src="/api/captcha.php" alt="Contact Captcha" crossorigin="use-credentials">
+            <button onclick="refreshContactCaptcha()">Refresh</button>
+        </div>
+        <input type="text" id="contact-captcha" placeholder="Enter captcha code">
+        <button onclick="testContactForm()">Send Contact Message</button>
+        <div id="contact-result"></div>
+    </div>
+
+    <!-- Newsletter Test -->
+    <div class="test-section">
+        <h2>4. Newsletter Subscription Test</h2>
+        <input type="email" id="newsletter-email" placeholder="Email for newsletter" value="newsletter@gmail.com">
+        <div class="captcha-container">
+            <img id="newsletter-captcha-image" src="/api/captcha.php" alt="Newsletter Captcha" crossorigin="use-credentials">
+            <button onclick="refreshNewsletterCaptcha()">Refresh</button>
+        </div>
+        <input type="text" id="newsletter-captcha" placeholder="Enter captcha code">
+        <button onclick="testNewsletter()">Subscribe to Newsletter</button>
+        <div id="newsletter-result"></div>
+    </div>
+
+    <!-- Profile Update Test (requires login) -->
+    <div class="test-section">
+        <h2>5. Profile Update Test</h2>
+        <div class="info">
+            <strong>Note:</strong> This test requires you to be logged in. Please log in to your account first.
+        </div>
+        <textarea id="profile-bio" placeholder="Bio" rows="3">Updated bio from test script</textarea>
+        <input type="text" id="profile-location" placeholder="Location" value="Tashkent, Uzbekistan">
+        <input type="text" id="profile-website" placeholder="Website" value="https://example.com">
+        <input type="file" id="profile-avatar" accept="image/*">
+        <button onclick="testProfileUpdate()">Update Profile</button>
+        <div id="profile-result"></div>
+    </div>
+
+    <script>
+        // Helper function to display results
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        // Test API Connection
+        async function testAPIConnection() {
+            try {
+                const response = await fetch('/api/api.php?action=test', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult('api-result', `✅ API Connection Success: ${data.message} (${data.timestamp})`, 'success');
+                } else {
+                    showResult('api-result', `❌ API Connection Failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('api-result', `❌ API Connection Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test Cookie and Session
+        async function testCookieSession() {
+            try {
+                // First, load captcha to establish session
+                const captchaResponse = await fetch('/api/captcha.php', {
+                    credentials: 'include'
+                });
+                
+                if (captchaResponse.ok) {
+                    // Check if cookies are being sent
+                    const cookies = document.cookie;
+                    const hasBlogSession = cookies.includes('BLOG_SESSION');
+                    
+                    let result = '📊 Cookie/Session Test Results:\n';
+                    result += `• Captcha Response: ${captchaResponse.status} ${captchaResponse.statusText}\n`;
+                    result += `• Cookies: ${cookies || 'No cookies found'}\n`;
+                    result += `• Blog Session Cookie: ${hasBlogSession ? '✅ Found' : '❌ Not found'}\n`;
+                    result += `• Credentials Include: ✅ Enabled\n`;
+                    
+                    // Test session persistence with a simple API call
+                    const testResponse = await fetch('/api/api.php?action=test', {
+                        credentials: 'include'
+                    });
+                    const testData = await testResponse.json();
+                    result += `• API Session Test: ${testData.success ? '✅ Working' : '❌ Failed'}`;
+                    
+                    showResult('api-result', result, hasBlogSession ? 'success' : 'error');
+                } else {
+                    showResult('api-result', `❌ Captcha request failed: ${captchaResponse.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('api-result', `❌ Cookie/Session test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Refresh captcha with proper credentials
+        function refreshCaptcha() {
+            const img = document.getElementById('captcha-image');
+            const timestamp = Date.now();
+            img.crossOrigin = 'use-credentials';
+            img.src = `/api/captcha.php?t=${timestamp}`;
+            
+            // Log for debugging
+            img.onload = () => console.log('Main captcha loaded successfully');
+            img.onerror = (e) => console.error('Main captcha load error:', e);
+        }
+
+        function refreshContactCaptcha() {
+            const img = document.getElementById('contact-captcha-image');
+            const timestamp = Date.now();
+            img.crossOrigin = 'use-credentials';
+            img.src = `/api/captcha.php?t=${timestamp}`;
+            
+            img.onload = () => console.log('Contact captcha loaded successfully');
+            img.onerror = (e) => console.error('Contact captcha load error:', e);
+        }
+
+        function refreshNewsletterCaptcha() {
+            const img = document.getElementById('newsletter-captcha-image');
+            const timestamp = Date.now();
+            img.crossOrigin = 'use-credentials';
+            img.src = `/api/captcha.php?t=${timestamp}`;
+            
+            img.onload = () => console.log('Newsletter captcha loaded successfully');
+            img.onerror = (e) => console.error('Newsletter captcha load error:', e);
+        }
+
+        // Test captcha validation
+        async function testCaptcha() {
+            const captcha = document.getElementById('captcha-input').value;
+            if (!captcha) {
+                showResult('captcha-result', '❌ Please enter captcha code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/api.php?action=contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        name: 'Test',
+                        email: 'test@gmail.com',
+                        message: 'Test message',
+                        captcha: captcha
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showResult('captcha-result', '✅ Captcha validation successful!', 'success');
+                } else {
+                    showResult('captcha-result', `❌ Captcha validation failed: ${data.message}`, 'error');
+                }
+                refreshCaptcha();
+            } catch (error) {
+                showResult('captcha-result', `❌ Captcha test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test contact form
+        async function testContactForm() {
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const message = document.getElementById('contact-message').value;
+            const captcha = document.getElementById('contact-captcha').value;
+
+            if (!name || !email || !message || !captcha) {
+                showResult('contact-result', '❌ Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/api.php?action=contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name, email, message, captcha })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showResult('contact-result', '✅ Contact form submitted successfully!', 'success');
+                    document.getElementById('contact-captcha').value = '';
+                } else {
+                    showResult('contact-result', `❌ Contact form failed: ${data.message}`, 'error');
+                }
+                refreshContactCaptcha();
+            } catch (error) {
+                showResult('contact-result', `❌ Contact form error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test newsletter subscription
+        async function testNewsletter() {
+            const email = document.getElementById('newsletter-email').value;
+            const captcha = document.getElementById('newsletter-captcha').value;
+
+            if (!email || !captcha) {
+                showResult('newsletter-result', '❌ Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/api.php?action=newsletter-subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, captcha })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showResult('newsletter-result', '✅ Newsletter subscription successful!', 'success');
+                    document.getElementById('newsletter-captcha').value = '';
+                } else {
+                    showResult('newsletter-result', `❌ Newsletter subscription failed: ${data.message}`, 'error');
+                }
+                refreshNewsletterCaptcha();
+            } catch (error) {
+                showResult('newsletter-result', `❌ Newsletter subscription error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test profile update
+        async function testProfileUpdate() {
+            const token = localStorage.getItem('blog_token');
+            if (!token) {
+                showResult('profile-result', '❌ Please log in first to test profile update', 'error');
+                return;
+            }
+
+            const bio = document.getElementById('profile-bio').value;
+            const location = document.getElementById('profile-location').value;
+            const website = document.getElementById('profile-website').value;
+            const avatar = document.getElementById('profile-avatar').files[0];
+
+            const formData = new FormData();
+            formData.append('bio', bio);
+            formData.append('location', location);
+            formData.append('website', website);
+            if (avatar) {
+                formData.append('avatar', avatar);
+            }
+
+            try {
+                const response = await fetch('/api/api.php?action=update-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    credentials: 'include',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showResult('profile-result', '✅ Profile updated successfully!', 'success');
+                } else {
+                    showResult('profile-result', `❌ Profile update failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('profile-result', `❌ Profile update error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize page
+        window.onload = function() {
+            // Refresh all captchas on page load
+            refreshCaptcha();
+            refreshContactCaptcha();
+            refreshNewsletterCaptcha();
+            
+            // Auto-test API connection
+            testAPIConnection();
+        };
+    </script>
+</body>
+</html>
