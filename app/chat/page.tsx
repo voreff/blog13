@@ -65,8 +65,8 @@ export default function ChatPage() {
       // heartbeat every 60s
       const beat = setInterval(() => {
         apiCall(apiEndpoints.heartbeat, { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('blog_token')}` } }).catch(() => {})
-      }, 60000)
-      const interval = setInterval(loadUsers, 500000) // Refresh every 5 seconds
+      }, 600)
+      const interval = setInterval(loadUsers, 300) // Refresh every 5 seconds
       return () => { clearInterval(interval); clearInterval(beat) }
     }
   }, [currentUser])
@@ -76,7 +76,7 @@ export default function ChatPage() {
       loadMessages()
       // Only auto-refresh when not searching users
       if (!searchQuery.trim()) {
-        const interval = setInterval(checkForNewMessages, 500000) // Increased to 5 seconds
+        const interval = setInterval(checkForNewMessages, 300) // Increased to 5 seconds
         return () => clearInterval(interval)
       }
     }
